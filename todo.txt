@@ -1,0 +1,13 @@
+audio.py:
+# TODO: figure out noise reduction, fft stuff, use the oop way, make it look cool
+# TODO: # https://github.com/CoreyMSchafer/code_snippets/blob/master/Python/Matplotlib/09-LiveData/snippets.txt 
+# use this to for example instead of cla() 
+
+
+# # to ensure the script finishes even if a keyboard interrupt is done
+# def signal_handler(signal, frame):
+#     global interrupted
+#     interrupted = True
+# interrupeted = False
+# signal.signal(signal.SIGINT, signal_handler)
+- need to create a class structure/break everything down into methods

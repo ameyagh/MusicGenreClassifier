@@ -4,22 +4,11 @@ import pyaudio
 import numpy as np
 import signal
 from itertools import count
+import wave
 
 plt.style.use('fivethirtyeight')
 
 # USE THIS FILE TO RECORD YOUR OWN AUDIO
-
-# TODO: figure out noise reduction, fft stuff, use the oop way, make it look cool
-# TODO: # https://github.com/CoreyMSchafer/code_snippets/blob/master/Python/Matplotlib/09-LiveData/snippets.txt 
-# use this to for example instead of cla() 
-
-
-# # to ensure the script finishes even if a keyboard interrupt is done
-# def signal_handler(signal, frame):
-#     global interrupted
-#     interrupted = True
-# interrupeted = False
-# signal.signal(signal.SIGINT, signal_handler)
 
 # CONSTANTS:
 MAX_Y = 20000
@@ -33,9 +22,11 @@ RATE = None # time resolution of the recording device (Hz)
 FORMAT = pyaudio.paInt16 # audio format
 INDEX = None # input device index
 CHANNELS = None # number of input channels for input device
+FILENAME = 'practice.wav' # name of file created when you want to classify your own audio recorded by your microphone
 
 p=pyaudio.PyAudio() # start the PyAudio Class
 
+# find the laptop microphone or any other external microphone
 for i in range(0, p.get_device_count()):
     dic = p.get_device_info_by_index(i)
     if 'microphone' in dic['name'].lower():
@@ -47,6 +38,7 @@ for i in range(0, p.get_device_count()):
 if INDEX is None:
     print('USING DEFAULT DEVICE')
 
+# open pyAudio stream
 stream = p.open(
     format=FORMAT, 
     channels = CHANNELS, 
@@ -60,14 +52,19 @@ stream = p.open(
 fig = plt.figure()
 ax = plt.axes(projection='3d')
 
+# just to ensure that the microphone is properly recording
 print('recording...')
 
+frames = []
+
+# create the animation
 def init():
     ax.set_xlim(left=MIN_X, right=MAX_X)
     ax.set_ylim(bottom=MIN_X, top=MAX_X)
     ax.set_zlim(MIN_Y, MAX_Y)
     # fig.set_facecolor('black')
 
+# update every 10 miliseconds
 def update():
     ax.set_xlim(left=MIN_X, right=MAX_X)
     ax.set_ylim(bottom=MIN_X, top=MAX_X)
@@ -80,7 +77,10 @@ def update():
     ax.set_zticks([])
     # ax.set_axis_off()
     fig.set_facecolor('black')
+    data = stream.read(CHUNK)
+    frames.append(data)
 
+# create the matplotlib animation
 def animation(i):
     data = stream.read(CHUNK, exception_on_overflow=False)
     unpacked = np.frombuffer(data, dtype=np.int16)
@@ -93,7 +93,9 @@ def animation(i):
     update()
     ax.plot(x_vals, y_vals, unpacked)
 
+# Initialize function
 ani = FuncAnimation(fig, animation, interval=10, init_func=init)
+
 
 fig.tight_layout()
 plt.show()
@@ -101,5 +103,13 @@ plt.show()
 stream.stop_stream()
 stream.close()
 p.terminate()
+
+# record your own audio
+wavFile = wave.open(FILENAME, 'wb')
+wavFile.setnchannels(CHANNELS)
+wavFile.setsampwidth(p.get_sample_size(FORMAT))
+wavFile.setframerate(RATE)
+wavFile.writeframes(b''.join(frames))
+wavFile.close()
 
 print('finished recording')
